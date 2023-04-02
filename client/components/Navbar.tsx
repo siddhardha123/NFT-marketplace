@@ -13,6 +13,8 @@ const navlinks = [
 ]
 
 const Navbar = () => {
+
+   
   return (
     <div className='flex justify-between px-32'>
        <div className=''>
