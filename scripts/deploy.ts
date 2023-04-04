@@ -1,24 +1,29 @@
-import { ethers } from "hardhat";
+
+import {ethers} from "hardhat"
+import hre from "hardhat"
+import fs from "fs"
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const [deployer] = await ethers.getSigners();
+  const balance = await deployer.getBalance();
+  const Marketplace = await hre.ethers.getContractFactory("marketplace");
+  const marketplace = await Marketplace.deploy();
 
-  const lockedAmount = ethers.utils.parseEther("0.001");
+  await marketplace.deployed();
 
-  const Lock = await ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  const abiParse = JSON.parse((marketplace.interface as any).format('json'));
+  const data = {
+    address: marketplace.address,
+    abi: abiParse
+  }
 
-  await lock.deployed();
-
-  console.log(
-    `Lock with ${ethers.utils.formatEther(lockedAmount)}ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
+  //This writes the ABI and address to the mktplace.json
+  fs.writeFileSync('./Marketplace.json', JSON.stringify(data))
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

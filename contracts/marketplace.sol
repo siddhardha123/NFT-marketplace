@@ -79,17 +79,55 @@ contract marketplace is ERC721URIStorage {
         _transfer(msg.sender,address(this),_tokenId);
     }
 
-    function getAllNfts()
-    {
+    function getAllNFTs() public view returns (ListedToken[] memory) {
+        uint nftCount = _tokenIds.current();
+        ListedToken[] memory tokens = new ListedToken[](nftCount);
+        uint currentIndex = 0;
 
+        for(uint i=0;i<nftCount;i++)
+        {
+            uint currentId = i + 1;
+            ListedToken storage currentItem = idToListedToken[currentId];
+            tokens[currentIndex] = currentItem;
+            currentIndex += 1;
+        }
+        return tokens;
+    }
+    
+    function getMyNFTs() public view returns (ListedToken[] memory) {
+        uint totalItemCount = _tokenIds.current();
+        uint itemCount = 0;
+        uint currentIndex = 0;
+        
+        for(uint i=0; i < totalItemCount; i++)
+        {
+            if(idToListedToken[i+1].owner == msg.sender || idToListedToken[i+1].seller == msg.sender){
+                itemCount += 1;
+            }
+        }
+        ListedToken[] memory items = new ListedToken[](itemCount);
+        for(uint i=0; i < totalItemCount; i++) {
+            if(idToListedToken[i+1].owner == msg.sender || idToListedToken[i+1].seller == msg.sender) {
+                uint currentId = i+1;
+                ListedToken storage currentItem = idToListedToken[currentId];
+                items[currentIndex] = currentItem;
+                currentIndex += 1;
+            }
+        }
+        return items;
     }
 
-    function getMyNfts(){
-
-    }
-
-    function executeSale(){
-
+    function executeSale(uint256 tokenId) public payable {
+        uint price = idToListedToken[tokenId].price;
+        address seller = idToListedToken[tokenId].seller;
+        require(msg.value == price, "Please submit the asking price in order to complete the purchase");
+        idToListedToken[tokenId].currentlyListed = true;
+        idToListedToken[tokenId].seller = payable(msg.sender);
+        _itemsSold.increment();      
+        _transfer(address(this), msg.sender, tokenId);
+        approve(address(this), tokenId);
+        payable(owner).transfer(listPrice);
+        payable(seller).transfer(msg.value);
     }
 
 
